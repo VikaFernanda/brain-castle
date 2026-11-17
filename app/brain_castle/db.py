@@ -110,11 +110,36 @@ def migrate(con: sqlite3.Connection, migrations=None) -> int:
     return len(migrations)
 
 
+class DatabaseDamaged(Exception):
+    """The file is not a readable SQLite database. The file is left exactly as it was."""
+
+    def __init__(self, path, reason: str):
+        super().__init__(f"{path}: {reason}")
+        self.path = Path(path)
+        self.reason = reason
+
+
+_DAMAGE_WORDS = ("not a database", "malformed", "corrupt", "disk image")
+
+
 def connect(path: str | Path, migrations=None) -> sqlite3.Connection:
     # isolation_level=None: we run BEGIN/COMMIT ourselves. check_same_thread=False: pywebview calls
     # the api from worker threads; services.py serialises them with a lock.
     con = sqlite3.connect(str(path), isolation_level=None, check_same_thread=False)
-    con.row_factory = sqlite3.Row
-    con.execute("PRAGMA foreign_keys=ON")
-    migrate(con, migrations)
+    try:
+        con.row_factory = sqlite3.Row
+        con.execute("PRAGMA foreign_keys=ON")
+        # Look before any write: a damaged file must stay untouched so the user can recover it.
+        problem = con.execute("PRAGMA quick_check").fetchone()[0]
+        if problem != "ok":
+            raise DatabaseDamaged(path, str(problem))
+        migrate(con, migrations)
+    except sqlite3.DatabaseError as e:
+        con.close()
+        if any(w in str(e).lower() for w in _DAMAGE_WORDS):
+            raise DatabaseDamaged(path, str(e)) from e
+        raise
+    except BaseException:
+        con.close()
+        raise
     return con

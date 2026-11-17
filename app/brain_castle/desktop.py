@@ -86,6 +86,17 @@ def data_folder_message(error: OSError) -> str:
             f"{error}\n\nMove the app to a folder you can write to, or check the folder permissions.")
 
 
+def database_damaged_message(path, reason: str) -> str:
+    return ("Brain Castle cannot read its database. Your file was NOT changed or deleted.\n\n"
+            f"File: {path}\nProblem: {reason}\n\n"
+            "What to do:\n"
+            "1. Close the app and copy the file to a safe place.\n"
+            "2. Restore a backup: rename the damaged file (for example to brain-castle.damaged.db), "
+            "start the app, and use File > Import backup...\n"
+            "3. Or open the copy with a SQLite tool to rescue your data.\n\n"
+            "The app will not start until the file is moved or fixed.")
+
+
 # ---------- crash log ----------
 
 def install_crash_logging(logs_dir: Path | None) -> Path:

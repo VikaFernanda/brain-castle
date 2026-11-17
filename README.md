@@ -49,6 +49,25 @@ If you downloaded the zip, you can also right-click the zip, choose **Properties
 The window uses Microsoft Edge WebView2. It is included in Windows 11 and in current Windows 10 updates. If it is missing, the app shows a message with the download link:
 https://developer.microsoft.com/microsoft-edge/webview2/ (choose the Evergreen runtime).
 
+## If the database file is damaged
+The app checks the database file when it starts. If it cannot be read, the app shows a message with the file name and does
+not start. **It does not change, move or delete the file.** To get going again:
+1. Close the app. Copy `data\brain-castle.db` to a safe place.
+2. Rename the damaged file (for example to `brain-castle.damaged.db`) and start the app. It opens with an empty database.
+3. Use **File > Import backup...** to restore your last backup (the zip from **File > Export backup...**).
+
+Make a backup now and then. It is the only way back if the file is lost.
+
+## Checks before a release
+```powershell
+app\.venv\Scripts\python -m pytest app\tests            # Python: rules, images, backup, data safety
+python app\web\dev\qa.py shots                          # every screen, 3 themes, 1440x900 and 1024x700, overflow check
+python app\tools\qa_source_compare.py                   # design CSS / text against the app
+app\.venv\Scripts\python app\tools\load_test.py         # 1,000 tasks, 200 notes, 50 books, 100 images
+python app\web\dev\load_test.py                         # same in the browser
+```
+Reports: `docs\qa-report.md`, `docs\requirements-check.md`. Changes: `CHANGELOG.md`.
+
 ## Build it yourself
 You need Windows and Python 3.12 (`py -3.12`).
 

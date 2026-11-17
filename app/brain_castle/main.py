@@ -55,7 +55,12 @@ def main(argv=None) -> int:
         if not desktop.webview2_installed():
             desktop.message_box("Brain Castle", desktop.webview2_missing_message(), ask_open_url=desktop.WEBVIEW2_URL)
             return 1
-        return run(args, data)
+        try:
+            return run(args, data)
+        except db.DatabaseDamaged as e:  # clear message, and the file stays where it is
+            api_module.log.error("damaged database: %s", e)
+            desktop.message_box("Brain Castle", desktop.database_damaged_message(e.path, e.reason))
+            return 1
     finally:
         lock.release()
 
