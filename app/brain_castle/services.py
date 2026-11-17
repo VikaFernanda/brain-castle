@@ -598,3 +598,28 @@ class Services:
                                  (key, value))
             return self._settings()
         return self._tx(run)
+
+    # ---------- window position (not part of the JS settings; only main.py uses it) ----------
+
+    def get_window_state(self) -> dict | None:
+        """{"x","y","width","height"} (ints) saved at the last close, or None."""
+        import json
+
+        def run():
+            row = self.con.execute("SELECT value FROM settings WHERE key='window'").fetchone()
+            if not row:
+                return None
+            try:
+                v = json.loads(row[0])
+                if isinstance(v, dict) and all(type(v.get(k)) is int for k in ("x", "y", "width", "height")):
+                    return {k: v[k] for k in ("x", "y", "width", "height")}
+            except ValueError:
+                pass
+            return None
+        return self._read(run)
+
+    def set_window_state(self, state: dict) -> None:
+        import json
+        value = json.dumps({k: int(state[k]) for k in ("x", "y", "width", "height")})
+        self._tx(lambda: self.con.execute(
+            "INSERT INTO settings(key, value) VALUES ('window', ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (value,)))

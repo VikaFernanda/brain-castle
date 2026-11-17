@@ -43,6 +43,13 @@ def web_dir() -> Path:
     return APP_DIR / "web"
 
 
+def assets_dir() -> Path:
+    """Folder with the app icon (inside the bundle when frozen)."""
+    if is_frozen():
+        return Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent)) / "assets"
+    return APP_DIR / "assets"
+
+
 def _writable(folder: Path) -> bool:
     try:
         folder.mkdir(parents=True, exist_ok=True)
