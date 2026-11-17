@@ -5,6 +5,7 @@ body{margin:0}
 .bc h1,.bc h2,.bc h3{font-family:Fredoka,Nunito,system-ui,sans-serif;font-weight:600;margin:0}
 .bc button{font-family:inherit}
 .bc :focus-visible{outline:3px solid var(--strong);outline-offset:2px}
+.bc img,.bc a{-webkit-user-drag:none}
 .i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .btn{font-weight:700;font-size:15px;border:0;border-radius:999px;padding:0 18px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;color:var(--ink);background:var(--accent-soft);white-space:nowrap}
 .btn:hover{background:var(--accent)}

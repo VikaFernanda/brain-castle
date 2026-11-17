@@ -17,6 +17,7 @@ import { createTaskActions } from './tasks/actions.js';
 import { buildTasksView } from './tasks/view.js';
 import { createDiaryActions } from './diary/actions.js';
 import { buildDiaryView } from './diary/view.js';
+import { installDesktop } from './lib/desktop.js';
 import { DAYS, fmt, mondayOf, monthOf, todayISO } from './lib/dates.js';
 
 const api = createApi();
@@ -114,11 +115,9 @@ async function boot() {
 }
 boot();
 
-// Esc clears the search (a modal or confirm dialog gets its own Esc first).
-document.addEventListener('keydown', (e) => {
-  const s = store.getState();
-  if (e.key === 'Escape' && s.q && !s.modal && !s.confirm) actions.clearSearch();
-});
+// Shortcuts (Ctrl+K, Ctrl+N, Esc), drag and drop safety, release-build blocks. No new UI.
+// Registered before any modal, so its Esc rules run first.
+installDesktop({ store, actions, T, D });
 
 // Auto-archive again at every midnight while the app is open.
 function scheduleMidnight() {
@@ -133,4 +132,4 @@ window.addEventListener('focus', () => { T.maintenance(); });
 setInterval(() => { T.maintenance(); }, 60 * 60 * 1000);
 
 // Exposed for dev tools and Playwright only.
-window.__bc = { store, api, actions };
+window.__bc = { store, api, actions, reload };
