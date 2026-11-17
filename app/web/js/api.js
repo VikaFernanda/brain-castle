@@ -2,6 +2,8 @@
 // Later a PywebviewApi with the same method names forwards each call to Python (window.pywebview.api).
 // Every method is async and returns plain JSON. See docs/data-contract.md for fields and rules.
 import { sampleData } from './mock-data.js';
+import { autoArchiveIds, restoreFields, notesAfterBookDelete, withoutTag } from './rules.js';
+import { todayISO } from './lib/dates.js';
 
 export const API_METHODS = [
   'load_all',
@@ -48,12 +50,12 @@ export class MockApi {
   }
   _delete(kind, id) {
     this.db[KINDS[kind]] = this._list(kind).filter((x) => x.id !== id);
-    if (kind === 'book') this.db.notes = this.db.notes.filter((n) => n.bookId !== id); // deleting a book deletes its notes
+    if (kind === 'book') this.db.notes = notesAfterBookDelete(this.db.notes, id);
     return { id };
   }
   _archive(kind, id) { return this._update(kind, id, { archived: true }); }
   _restore(kind, id) {
-    const item = this._update(kind, id, { archived: false, auto: false, keep: true });
+    const item = this._update(kind, id, restoreFields());
     if (kind === 'note') this._update('book', item.bookId, { archived: false }); // a restored note needs its book
     return item;
   }
@@ -85,8 +87,8 @@ export class MockApi {
   }
   async delete_tag(id) {
     this.db.tags = this.db.tags.filter((t) => t.id !== id);
-    this.db.tasks.forEach((t) => { t.tags = (t.tags || []).filter((x) => x !== id); });
-    this.db.notes.forEach((n) => { n.tags = (n.tags || []).filter((x) => x !== id); });
+    this.db.tasks = withoutTag(this.db.tasks, id);
+    this.db.notes = withoutTag(this.db.notes, id);
     return { id };
   }
 
@@ -112,11 +114,9 @@ export class MockApi {
     });
     return { ids };
   }
-  // Archives tasks dated more than 3 months ago (unless the user restored them). Returns their ids.
+  // Archives tasks dated more than 3 calendar months ago (rules.js). Returns their ids.
   async run_maintenance() {
-    const n = new Date();
-    const cut = (d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'))(new Date(n.getFullYear(), n.getMonth() - 3, n.getDate()));
-    const ids = this.db.tasks.filter((t) => !t.archived && !t.keep && t.date && t.date < cut).map((t) => t.id);
+    const ids = autoArchiveIds(this.db.tasks, todayISO());
     this.db.tasks.forEach((t) => { if (ids.includes(t.id)) { t.archived = true; t.auto = true; } });
     return { autoArchived: ids };
   }

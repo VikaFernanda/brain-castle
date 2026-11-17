@@ -2,12 +2,15 @@ import { render } from 'preact';
 import { html } from './html.js';
 import { createStore, useStore } from './store.js';
 import { createApi } from './api.js';
-import { TopBar, Sidebar, PlaceholderPage, SearchPlaceholder, THEMES } from './shell.js';
+import { TopBar, Sidebar, THEMES } from './shell.js';
 import { Toast } from './components/Toast.js';
 import { ConfirmDialog } from './components/ConfirmDialog.js';
 import { BulkBar } from './components/BulkBar.js';
 import { TasksPage } from './pages/TasksPage.js';
 import { DiaryPage } from './pages/DiaryPage.js';
+import { ArchivePage } from './pages/ArchivePage.js';
+import { SearchPage } from './pages/SearchPage.js';
+import { createArchiveActions } from './archive/actions.js';
 import { TaskModal, TagsModal } from './pages/TaskModals.js';
 import { NoteModal, BookModal } from './pages/DiaryModals.js';
 import { createTaskActions } from './tasks/actions.js';
@@ -36,6 +39,7 @@ const toast = (msg) => {
 // All view actions in one place. Pages added later get their own action files.
 const actions = {
   go: (area) => setState({ area, themeOpen: false, q: '', sel: {}, selMode: false, tagF: null, modal: null, openBook: null }),
+  resetSel: () => setState({ sel: {}, selMode: false }),
   closeBook: () => setState({ openBook: null, sel: {} }),
   setQuery: (q) => setState({ q }),
   clearSearch: () => setState({ q: '' }),
@@ -49,11 +53,14 @@ const actions = {
 };
 const T = createTaskActions({ api, store, toast, ask: actions.ask });
 const D = createDiaryActions({ api, store, toast, ask: actions.ask, T });
+const R = createArchiveActions({ api, store, toast, ask: actions.ask, T });
 
-const SUBS = {
-  archive: 'Archived items come in a later phase.'
+// Click a search result: tasks and notes open their modal, a book opens in the Diary board.
+const openResult = (r) => {
+  if (r.kind === 'task') T.openTask(r.id);
+  else if (r.kind === 'note') D.openNote(r.id);
+  else setState({ area: 'diary', dview: 'board', openBook: r.id, q: '', sel: {}, selMode: false });
 };
-const TITLES = { tasks: 'Tasks', diary: 'Diary', archive: 'Archive' };
 
 function App() {
   const s = useStore(store);
@@ -75,7 +82,7 @@ function App() {
     <div class="shell">
       <${Sidebar} state=${s} counts=${counts} actions=${actions} />
       <main class="mainpane" style="flex:1 1 0;min-width:0;padding:24px 28px 120px;display:flex;flex-direction:column;gap:20px">
-        ${s.q.trim() ? html`<${SearchPlaceholder} q=${s.q} />` : isTasks ? html`<${TasksPage} s=${s} A=${T} />` : isDiary ? html`<${DiaryPage} s=${s} A=${D} />` : html`<${PlaceholderPage} title=${TITLES[s.area]} sub=${SUBS[s.area]} />`}
+        ${s.q.trim() ? html`<${SearchPage} s=${s} onOpen=${openResult} />` : isTasks ? html`<${TasksPage} s=${s} A=${T} />` : isDiary ? html`<${DiaryPage} s=${s} A=${D} />` : html`<${ArchivePage} s=${s} A=${R} />`}
       </main>
     </div>
     ${isTasks && selCount > 0 ? html`<${BulkBar} count=${selCount} moveOptions=${dayOpts} moveLabel="Move selected tasks to a day" onMove=${(e) => { T.bulkMove(e.target.value); e.target.value = ''; }} onArchive=${T.bulkArchive} onDelete=${T.askBulkDelete} onClear=${T.clearSel} onSelectAll=${() => T.selectAll(view.visibleIds)} selectAllLabel=${view.visibleIds.length > 0 && view.visibleIds.every((i) => s.sel[i]) ? 'Clear selection' : 'Select all'} />` : null}
@@ -97,6 +104,20 @@ async function boot() {
   await T.maintenance();
 }
 boot();
+
+// Esc clears the search (a modal or confirm dialog gets its own Esc first).
+document.addEventListener('keydown', (e) => {
+  const s = store.getState();
+  if (e.key === 'Escape' && s.q && !s.modal && !s.confirm) actions.clearSearch();
+});
+
+// Auto-archive again at every midnight while the app is open.
+function scheduleMidnight() {
+  const n = new Date();
+  const ms = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 0, 0, 1) - n;
+  setTimeout(async () => { await T.maintenance(); scheduleMidnight(); }, ms);
+}
+scheduleMidnight();
 
 // Exposed for dev tools and Playwright only.
 window.__bc = { store, api, actions };

@@ -19,6 +19,10 @@ export function createStore(initial) {
 // Re-render a component whenever the store changes.
 export function useStore(store) {
   const [s, set] = useState(store.getState());
-  useEffect(() => store.subscribe(set), [store]);
+  useEffect(() => {
+    const off = store.subscribe(set);
+    set(store.getState()); // catch up with changes made before the effect ran (boot loads data right away)
+    return off;
+  }, [store]);
   return s;
 }
