@@ -46,13 +46,23 @@ const actions = {
   toggleThemeMenu: () => setState((s) => ({ themeOpen: !s.themeOpen })),
   pickTheme: (theme) => {
     setState({ theme, themeOpen: false });
-    api.set_settings({ theme });
+    api.set_settings({ theme }).catch((e) => { toast(e && e.message ? e.message : 'Something went wrong'); reload().catch(() => {}); });
   },
   toast,
   ask: (text, yes) => setState({ confirm: { text, yes } })
 };
-const T = createTaskActions({ api, store, toast, ask: actions.ask });
-const D = createDiaryActions({ api, store, toast, ask: actions.ask, T });
+// Python is the source of truth: load everything again (start, and after a failed call).
+const reload = async () => {
+  const d = await api.load_all();
+  setState((s) => {
+    const alive = new Set([...d.tasks, ...d.notes, ...d.books].map((x) => x.id));
+    const sel = Object.fromEntries(Object.keys(s.sel).filter((i) => alive.has(i)).map((i) => [i, true]));
+    return { tasks: d.tasks, notes: d.notes, books: d.books, tags: d.tags, sel, openBook: alive.has(s.openBook) ? s.openBook : null,
+      theme: THEMES[d.settings.theme] ? d.settings.theme : s.theme };
+  });
+};
+const T = createTaskActions({ api, store, toast, ask: actions.ask, reload });
+const D = createDiaryActions({ api, store, toast, ask: actions.ask, T, reload });
 const R = createArchiveActions({ api, store, toast, ask: actions.ask, T });
 
 // Click a search result: tasks and notes open their modal, a book opens in the Diary board.
@@ -98,9 +108,8 @@ function App() {
 
 async function boot() {
   render(html`<${App} />`, document.getElementById('root'));
-  const data = await api.load_all();
-  const theme = THEMES[data.settings.theme] ? data.settings.theme : 'pink';
-  setState({ tasks: data.tasks, notes: data.notes, books: data.books, tags: data.tags, theme, loaded: true });
+  try { await reload(); } catch (e) { toast(e && e.message ? e.message : 'Could not load your data'); }
+  setState({ loaded: true });
   await T.maintenance();
 }
 boot();
@@ -118,6 +127,10 @@ function scheduleMidnight() {
   setTimeout(async () => { await T.maintenance(); scheduleMidnight(); }, ms);
 }
 scheduleMidnight();
+
+// Auto-archive also when the window gets focus (after the PC slept) and every hour.
+window.addEventListener('focus', () => { T.maintenance(); });
+setInterval(() => { T.maintenance(); }, 60 * 60 * 1000);
 
 // Exposed for dev tools and Playwright only.
 window.__bc = { store, api, actions };

@@ -1,6 +1,7 @@
 // ONE interface for data. The UI only talks to `api`. Phase 1 has MockApi (in memory, browser only).
 // Later a PywebviewApi with the same method names forwards each call to Python (window.pywebview.api).
 // Every method is async and returns plain JSON. See docs/data-contract.md for fields and rules.
+// MockApi runs in a normal browser (tests, screenshots). PyApi forwards each call to Python (pywebview js_api).
 import { sampleData } from './mock-data.js';
 import { autoArchiveIds, restoreFields, notesAfterBookDelete, withoutTag } from './rules.js';
 import { todayISO } from './lib/dates.js';
@@ -17,7 +18,6 @@ export const API_METHODS = [
 const KINDS = { task: 'tasks', note: 'notes', book: 'books' };
 const PREFIX = { t: 'task', n: 'note', b: 'book', g: 'tag', i: 'image' };
 const SETTINGS_DEFAULTS = { theme: 'pink' };
-const THEME_KEY = 'bc-theme';
 const clone = (x) => JSON.parse(JSON.stringify(x));
 
 export class MockApi {
@@ -122,16 +122,39 @@ export class MockApi {
   }
 
   async get_settings() {
-    let theme = SETTINGS_DEFAULTS.theme;
-    try { theme = localStorage.getItem(THEME_KEY) || theme; } catch (e) { /* storage blocked */ }
-    return { ...SETTINGS_DEFAULTS, ...(this.db.settings || {}), theme };
+    return { ...SETTINGS_DEFAULTS, ...(this.db.settings || {}) };
   }
   async set_settings(patch) {
     this.db.settings = { ...(this.db.settings || {}), ...patch };
-    if (patch.theme) { try { localStorage.setItem(THEME_KEY, patch.theme); } catch (e) { /* storage blocked */ } }
     return this.get_settings();
   }
 }
 
-// The single entry point. Phase 1: always MockApi. Later: window.pywebview ? new PywebviewApi() : new MockApi().
-export function createApi() { return new MockApi(); }
+// Python is the source of truth. Every Python method answers {ok: true, data} or {ok: false, error};
+// PyApi turns that into a resolved value or a rejected Error, like MockApi does.
+const pywebviewReady = () => new Promise((resolve) => {
+  if (window.pywebview && window.pywebview.api) resolve();
+  else window.addEventListener('pywebviewready', () => resolve(), { once: true });
+});
+
+export class PyApi {
+  constructor() {
+    this.ready = pywebviewReady();
+    API_METHODS.forEach((name) => {
+      this[name] = async (...args) => {
+        await this.ready;
+        let res;
+        try { res = await window.pywebview.api[name](...args); } catch (e) { throw new Error('Could not reach the app. Please restart it.'); }
+        if (!res || res.ok !== true) throw new Error((res && res.error) || 'Something went wrong');
+        return res.data;
+      };
+    });
+  }
+}
+
+// The single entry point. main.py opens index.html?host=py, so the desktop app gets PyApi and a
+// normal browser gets MockApi.
+export function createApi() {
+  const py = new URLSearchParams(window.location.search).get('host') === 'py';
+  return py ? new PyApi() : new MockApi();
+}

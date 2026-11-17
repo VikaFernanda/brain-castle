@@ -1,9 +1,10 @@
+import { reloadQuietly } from '../lib/reload.js';
 // Archive actions: talk to `api`, then reload the lists from `load_all` (restoring a note also restores its
 // book, deleting a book also deletes its notes, so the api is the one that knows the final state).
 export function createArchiveActions({ api, store, toast, ask, T }) {
   const { getState, setState } = store;
   const safe = (fn) => async (...args) => {
-    try { return await fn(...args); } catch (e) { toast(e && e.message ? e.message : 'Something went wrong'); return undefined; }
+    try { return await fn(...args); } catch (e) { toast(e && e.message ? e.message : 'Something went wrong'); await reloadQuietly(reload); return undefined; }
   };
   const reload = async () => {
     const d = await api.load_all();

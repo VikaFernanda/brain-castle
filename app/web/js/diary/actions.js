@@ -1,19 +1,20 @@
 // Diary actions: talk to `api`, then update the store with what the api returned.
 // Shared behaviour (selection, tags, drag events, tag modal) comes from the task actions `T`.
 import { addDays, addMonths, mondayOf, monthOf, todayISO } from '../lib/dates.js';
+import { reloadQuietly } from '../lib/reload.js';
 import { pruneImgs } from '../lib/text.js';
 import { PAL } from '../mock-data.js';
 
 const SHARED = ['toggleSelMode', 'toggleSel', 'clearSel', 'selectAll', 'setTag', 'openTags', 'setModal', 'toast', 'closeModal',
   'dragStart', 'dragEnd', 'over', 'leave', 'addTagToModal', 'saveTag', 'askDeleteTag'];
 
-export function createDiaryActions({ api, store, toast, ask, T }) {
+export function createDiaryActions({ api, store, toast, ask, reload, T }) {
   const { getState, setState } = store;
   const idle = { dragId: null, overKey: null };
   const letter = (id) => id[0];
 
   const safe = (fn) => async (...args) => {
-    try { return await fn(...args); } catch (e) { toast(e && e.message ? e.message : 'Something went wrong'); return undefined; }
+    try { return await fn(...args); } catch (e) { toast(e && e.message ? e.message : 'Something went wrong'); await reloadQuietly(reload); return undefined; }
   };
   const KEY = { n: 'notes', b: 'books' };
   const swap = (key, items) => {
