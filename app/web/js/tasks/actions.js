@@ -125,7 +125,8 @@ export function createTaskActions({ api, store, toast, ask }) {
       setState({ modal: { kind: 'task', id: id || null, title: t ? t.title : '', text: t ? t.notes : '', images: t ? { ...(t.images || {}) } : {}, time: t ? (t.time || '') : '', date: date || '', tags: t ? [...t.tags] : [], newTag: '', err: '' } });
     },
     openTags: () => setState((s) => ({ modal: { kind: 'tag', id: null, title: '', color: PAL[s.tags.length % 6], err: '' } })),
-    setModal: (p) => setState((s) => ({ modal: { ...s.modal, ...p } })),
+    setModal: (p) => setState((s) => ({ modal: { ...s.modal, ...(typeof p === 'function' ? p(s.modal) : p) } })),
+    toast,
     closeModal: () => setState({ modal: null }),
     saveTask: safe(async () => {
       const md = getState().modal;

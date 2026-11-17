@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Markdown tests</title>
+<link rel="stylesheet" href="../css/tokens.css">
+<script type="importmap">
+{ "imports": { "preact": "../js/vendor/preact.module.js", "preact/hooks": "../js/vendor/hooks.module.js", "htm": "../js/vendor/htm.module.js" } }
+</script>
+<style>body{font:14px system-ui;margin:16px}.ok{color:#0a7a2f}.bad{color:#b00020;font-weight:700}#sandbox{position:absolute;left:-9999px}</style>
+</head>
+<body>
+<h1>js/markdown.js tests</h1>
+<div id="summary">running...</div>
+<ul id="out"></ul>
+<div id="sandbox"></div>
+<script type="module">
+import { render } from 'preact';
+import { renderMarkdown, splitBlocks, parseInline, safeHref } from '../js/markdown.js';
+
+const IMG = { i1: 'data:image/png;base64,iVBORw0KGgo=' };
+window.__xss = 0; // any injected script or handler would bump this
+const box = document.getElementById('sandbox');
+const dom = (md, images = IMG) => { render(renderMarkdown(md, images), box); return box; };
+const q = (md, sel, images) => dom(md, images).querySelector(sel);
+const qa = (md, sel, images) => [...dom(md, images).querySelectorAll(sel)];
+const txt = (md, sel) => { const e = q(md, sel); return e ? e.textContent : null; };
+const noTag = (md, tag) => dom(md).querySelector(tag) === null;
+const GRID = '[style*="grid"] > div';
+
+const T = [];
+const t = (name, fn) => T.push([name, fn]);
+
+// ---- block features ----
+t('heading 1 size', () => q('# Hi', 'div div div').style.fontSize === '28px');
+t('heading 3 size', () => q('### Hi', 'div div div').style.fontSize === '20px');
+t('heading 6 size', () => q('###### Hi', 'div div div').style.fontSize === '15px');
+t('heading uses Fredoka', () => /Fredoka/.test(q('# Hi', 'div div div').getAttribute('style')));
+t('not a heading without space', () => txt('#Hi', 'div div') === '#Hi');
+t('paragraph', () => txt('Hello world', 'div div') === 'Hello world');
+t('soft line break joins with space', () => txt('a\nb', 'div div') === 'a b');
+t('hard break: two spaces', () => qa('a  \nb', 'br').length === 1);
+t('hard break: backslash', () => qa('a\\\nb', 'br').length === 1 && txt('a\\\nb', 'div div') === 'ab');
+t('escaped backslash at line end is no break', () => qa('a\\\\\nb', 'br').length === 0);
+t('blank line makes two blocks', () => splitBlocks('a\n\nb').length === 2);
+t('code fence keeps blank lines in one block', () => splitBlocks('```\na\n\nb\n```\n\nafter').length === 2);
+t('tilde fence', () => txt('~~~\nx < y\n~~~', 'pre') === 'x < y');
+t('code block text', () => txt('```js\nlet a = 1;\n```', 'pre') === 'let a = 1;');
+t('code block does not parse markdown', () => qa('```\n**no**\n```', 'pre span').length === 0);
+t('horizontal rule', () => q('---', 'div div div').style.height === '2px');
+t('hr with stars', () => q('***', 'div div div').style.height === '2px');
+t('block quote', () => /italic/.test(q('> hi', 'div div div').getAttribute('style')) && txt('> hi', 'div div div') === 'hi');
+t('nested quote', () => qa('> a\n> > b\n> > > c', 'div div div div').length >= 2);
+t('quote holds a list', () => { const s = txt('> - one', 'div div div'); return s.includes('one') && s.includes('•'); });
+t('bullet list', () => qa('- a\n- b\n- c', 'div div div > div').length === 3);
+t('ordered list numbers', () => txt('1. a\n2. b', 'div div div').includes('2.'));
+t('ordered list starts at its number', () => txt('3. a\n4. b', 'div div div').includes('3.'));
+t('nested list indents', () => { const r = qa('- a\n  - b\n    - c', 'div div div > div'); return r.length === 3 && r[0].style.paddingLeft === '0px' && r[1].style.paddingLeft === '18px' && r[2].style.paddingLeft === '36px'; });
+t('nested ordered list restarts', () => { const s = txt('1. a\n   1. b\n   2. c\n2. d', 'div div div'); return s.includes('1.') && s.includes('2.'); });
+t('task list unchecked and checked', () => { const r = qa('- [ ] a\n- [x] b', 'svg'); return r.length === 2 && r[0].style.opacity === '0' && r[1].style.opacity === '1'; });
+t('table', () => qa('| a | b |\n|---|---|\n| 1 | 2 |', GRID).length === 4);
+t('table header is bold', () => /800/.test(q('| a |\n|---|\n| 1 |', GRID).getAttribute('style')));
+t('table alignment', () => { const c = qa('| a | b | c |\n|:--|:-:|--:|\n| 1 | 2 | 3 |', GRID); return c[0].style.textAlign === 'left' && c[1].style.textAlign === 'center' && c[2].style.textAlign === 'right' && c[5].style.textAlign === 'right'; });
+t('table without outer pipes', () => qa('a | b\n-|-\n1 | 2', GRID).length === 4);
+t('table escaped pipe', () => qa('| a |\n|---|\n| x \\| y |', GRID)[1].textContent === 'x | y');
+t('table cell has inline markdown', () => qa('| a |\n|---|\n| **b** |', GRID + ' span').length === 1);
+t('short table row is padded', () => qa('| a | b |\n|---|---|\n| 1 |', GRID).length === 4);
+t('image token renders img', () => { const i = q('![cat](img:i1)', 'img'); return i && i.getAttribute('src') === IMG.i1 && i.alt === 'cat'; });
+t('missing image shows note', () => txt('![cat](img:zzz)', 'div div div').includes('Image not found: cat'));
+t('web image is never loaded', () => noTag('![x](https://evil.example/a.png)', 'img') && txt('![x](https://evil.example/a.png)', 'div div') === 'x');
+
+// ---- inline features ----
+t('bold **', () => q('**b**', 'span').style.fontWeight === '800');
+t('bold __', () => q('__b__', 'span').style.fontWeight === '800');
+t('italic *', () => q('*i*', 'span').style.fontStyle === 'italic');
+t('italic _', () => q('_i_', 'span').style.fontStyle === 'italic');
+t('snake_case_word is not italic', () => qa('snake_case_word', 'span').length === 0);
+t('strikethrough', () => /line-through/.test(q('~~s~~', 'span').getAttribute('style')));
+t('bold and italic ***', () => qa('***x***', 'span').length === 2);
+t('bold with italic inside', () => qa('**a *b* c**', 'span').length === 2);
+t('inline code', () => /Consolas/.test(q('use `x`', 'span').getAttribute('style')) && txt('use `x`', 'span') === 'x');
+t('inline code keeps markdown characters', () => txt('`*a*`', 'span') === '*a*' && qa('`*a*`', 'span').length === 1);
+t('double backtick code', () => txt('`` a`b ``', 'span') === 'a`b');
+t('link', () => { const a = q('[go](https://example.com/x)', 'a'); return a.getAttribute('href') === 'https://example.com/x' && a.textContent === 'go' && a.target === '_blank' && /noopener/.test(a.rel); });
+t('mailto link', () => q('[me](mailto:a@b.com)', 'a').getAttribute('href') === 'mailto:a@b.com');
+t('link with title', () => q('[a](https://x.com "t")', 'a').textContent === 'a');
+t('link with parentheses in url', () => q('[a](https://x.com/a_(b))', 'a').getAttribute('href') === 'https://x.com/a_(b)');
+t('inline code inside link', () => { const a = q('[`code`](https://x.com)', 'a'); return a && a.querySelector('span') && a.textContent === 'code'; });
+t('bold inside link', () => q('[**b**](https://x.com)', 'a span').style.fontWeight === '800');
+t('bare URL autolink', () => q('see https://example.com/a?b=1 now', 'a').getAttribute('href') === 'https://example.com/a?b=1');
+t('bare URL drops trailing punctuation', () => q('go to https://example.com.', 'a').getAttribute('href') === 'https://example.com');
+t('bare URL keeps balanced parens', () => q('(https://x.com/a_(b))', 'a').getAttribute('href') === 'https://x.com/a_(b)');
+t('www autolink', () => q('visit www.example.com today', 'a').getAttribute('href') === 'http://www.example.com');
+t('angle-bracket autolink', () => q('<https://example.com>', 'a').textContent === 'https://example.com');
+t('url inside code is not linked', () => qa('`https://x.com`', 'a').length === 0);
+t('url inside link text is not nested', () => qa('[https://a.com](https://b.com)', 'a').length === 1);
+t('backslash escapes stars', () => txt('\\*not italic\\*', 'div div') === '*not italic*' && qa('\\*x\\*', 'span').length === 0);
+t('backslash escapes brackets', () => txt('\\[a\\](https://x.com)', 'div div') === '[a](https://x.com)');
+t('unmatched stars stay text', () => txt('2 * 3 * 4', 'div div') === '2 * 3 * 4');
+t('unclosed backtick stays text', () => txt('a ` b', 'div div') === 'a ` b');
+
+// ---- hostile input: everything must stay text ----
+t('script tag is text', () => noTag('<script>window.__xss=1<\/script>', 'script') && txt('<script>window.__xss=1<\/script>', 'div div') === '<script>window.__xss=1<\/script>' && window.__xss === 0);
+t('img onerror is text', () => noTag('<img src=x onerror="window.__xss=1">', 'img') && window.__xss === 0);
+t('svg onload is text', () => noTag('<svg onload="window.__xss=1">', 'svg') && window.__xss === 0);
+t('iframe is text', () => noTag('<iframe src="https://evil.example"></iframe>', 'iframe'));
+t('raw html anchor is text', () => noTag('<a href="javascript:alert(1)">x</a>', 'a'));
+t('javascript: link is dropped', () => noTag('[x](javascript:alert(1))', 'a') && txt('[x](javascript:alert(1))', 'div div') === 'x');
+t('JaVaScRiPt: link is dropped', () => noTag('[x](JaVaScRiPt:alert(1))', 'a'));
+t('tab inside javascript: is dropped', () => noTag('[x](java\tscript:alert(1))', 'a'));
+t('data: link is dropped', () => noTag('[x](data:text/html;base64,PHNjcmlwdD4=)', 'a'));
+t('vbscript: link is dropped', () => noTag('[x](vbscript:msgbox(1))', 'a'));
+t('file: link is dropped', () => noTag('[x](file:///C:/Windows/win.ini)', 'a'));
+t('angle autolink javascript: is not a link', () => noTag('<javascript:alert(1)>', 'a'));
+t('relative link is dropped', () => noTag('[x](/etc/passwd)', 'a'));
+t('safeHref rules', () => safeHref('https://a.com') && safeHref('http://a.com') && safeHref('mailto:a@b.c') && !safeHref('javascript:1') && !safeHref('//a.com') && !safeHref('https://a.com/ x') && !safeHref(''));
+t('attribute breakout in link is harmless', () => { const a = q('[x](https://a.com/"onmouseover="window.__xss=1)', 'a'); return (!a || a.getAttributeNames().sort().join() === 'href,rel,style,target') && window.__xss === 0; });
+t('attribute breakout in alt is harmless', () => { const i = q('![a" onerror="window.__xss=1](img:i1)', 'img'); return i && !i.hasAttribute('onerror') && window.__xss === 0; });
+t('javascript: image source from the map is refused', () => { render(renderMarkdown('![a](img:bad)', { bad: 'javascript:alert(1)' }), box); return box.querySelector('img') === null; });
+t('html entity trick is just text', () => noTag('&lt;script&gt;', 'script') && txt('&lt;script&gt;', 'div div') === '&lt;script&gt;');
+t('hostile text in table cell', () => noTag('| <script>x<\/script> |\n|---|\n| <b>y</b> |', 'script') && noTag('| <script>x<\/script> |\n|---|\n| <b>y</b> |', 'b'));
+t('hostile text in heading, quote, list, code', () => ['# <b>x</b>', '> <b>x</b>', '- <b>x</b>', '```\n<b>x</b>\n```'].every((m) => noTag(m, 'b')));
+t('private-use break marker in input is removed', () => qa('a\uE000b', 'br').length === 0);
+t('deep quote nesting does not hang', () => dom('>'.repeat(5000) + ' x').textContent.includes('x'));
+t('huge emphasis input finishes', () => dom('*a '.repeat(3000)).textContent.length > 0);
+t('only elements the renderer builds', () => { const ok = new Set(['DIV', 'SPAN', 'A', 'PRE', 'IMG', 'BR', 'SVG', 'PATH']); const md = '# h\n\n> q\n\n- [x] a\n\n| a |\n|---|\n| b |\n\n```\nc\n```\n\n![i](img:i1) [l](https://x.com) `c` **b** <b>raw</b> <script>1<\/script>'; return [...dom(md).querySelectorAll('*')].every((e) => ok.has(e.tagName.toUpperCase())); });
+t('parseInline returns data, not html', () => parseInline('<b>x</b>').every((n) => n.t === 'text'));
+
+const out = document.getElementById('out'); let pass = 0; const failed = [];
+for (const [name, fn] of T) {
+  let ok = false; let err = '';
+  try { ok = !!fn(); } catch (e) { err = String((e && e.message) || e); }
+  if (ok) pass++; else failed.push(name + (err ? ' (' + err + ')' : ''));
+  const li = document.createElement('li'); li.className = ok ? 'ok' : 'bad'; li.textContent = (ok ? 'PASS ' : 'FAIL ') + name + (err ? ' ' + err : ''); out.appendChild(li);
+}
+document.getElementById('summary').textContent = pass + ' of ' + T.length + ' passed';
+window.__results = { total: T.length, pass, failed };
+</script>
+</body>
+</html>

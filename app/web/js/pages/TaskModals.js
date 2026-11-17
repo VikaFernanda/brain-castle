@@ -3,6 +3,7 @@ import { html } from '../html.js';
 import { Modal } from '../components/Modal.js';
 import { Button } from '../components/Button.js';
 import { IconButton } from '../components/IconButton.js';
+import { RichEditor } from '../components/RichEditor.js';
 import { PAL, PALN } from '../mock-data.js';
 
 function Footer({ md, A, isTag }) {
@@ -29,9 +30,7 @@ export function TaskModal({ s, A }) {
     <label class="lbl">Time (optional)
       <input class="field" type="time" value=${md.time} onInput=${(e) => A.setModal({ time: e.target.value })} />
     </label>
-    <label class="lbl">Details (optional)
-      <textarea class="field" rows="6" aria-label="Details (optional)" value=${md.text} placeholder="Write with GitHub markdown." onInput=${(e) => A.setModal({ text: e.target.value })}></textarea>
-    </label>
+    <${RichEditor} md=${md} A=${A} label="Details (optional)" />
     <div style="display:flex;flex-direction:column;gap:8px">
       <span style="font-weight:700;font-size:14px">Tags</span>
       <div style="display:flex;flex-wrap:wrap;gap:8px">

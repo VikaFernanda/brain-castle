@@ -1,8 +1,8 @@
 // Note modal and Book modal. Markup copied from the design's edit modal.
-// The note text is a plain textarea for now (the rich editor comes in a later phase).
 import { html } from '../html.js';
 import { Modal } from '../components/Modal.js';
 import { Button } from '../components/Button.js';
+import { RichEditor } from '../components/RichEditor.js';
 import { PAL, PALN } from '../mock-data.js';
 
 function Footer({ md, A, onSave }) {
@@ -34,9 +34,7 @@ export function NoteModal({ s, A }) {
         <input class="field" type="date" value=${md.date} onInput=${(e) => A.setModal({ date: e.target.value })} />
       </label>
     </div>
-    <label class="lbl">Your note
-      <textarea class="field" rows="10" aria-label="Your note" value=${md.text} placeholder="Write with GitHub markdown." onInput=${(e) => A.setModal({ text: e.target.value })}></textarea>
-    </label>
+    <${RichEditor} md=${md} A=${A} label="Your note" />
     <div style="display:flex;flex-direction:column;gap:8px">
       <span style="font-weight:700;font-size:14px">Tags</span>
       <div style="display:flex;flex-wrap:wrap;gap:8px">
