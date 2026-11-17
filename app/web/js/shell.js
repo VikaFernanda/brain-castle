@@ -27,7 +27,11 @@ export function buildCrumbs(s, actions) {
   }
   const list = [{ label: AREA_NAME[s.area], go: () => actions.go(s.area), current: s.area === 'archive' }];
   if (s.area === 'tasks') list.push({ label: s.tview === 'list' ? 'Week list' : 'Calendar board', go: () => {}, current: true });
-  if (s.area === 'diary') list.push({ label: s.dview === 'list' ? 'List' : 'Board', go: () => {}, current: true });
+  if (s.area === 'diary') {
+    const openB = s.dview === 'board' && s.openBook ? s.books.find((b) => b.id === s.openBook && !b.archived) : null;
+    list.push({ label: s.dview === 'list' ? 'List' : 'Board', go: actions.closeBook, current: !openB });
+    if (openB) list.push({ label: openB.name, go: () => {}, current: true });
+  }
   return list.map((c, i) => ({ ...c, sep: i > 0, style: c.current ? CRUMB_ON : CRUMB_OFF }));
 }
 
