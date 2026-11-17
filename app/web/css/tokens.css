@@ -1,0 +1,40 @@
+/* Themes copied from the design (Main.dc.html). Applied with data-theme on the .bc root. */
+[data-theme="pink"]{
+  --bg:#FFF6F3;
+  --side:#FFE5EC;
+  --surface:#FFFFFF;
+  --accent:#FFB8CC;
+  --accent-soft:#FFDCE6;
+  --accent2:#FFE58F;
+  --accent2-soft:#FFF4C7;
+  --strong:#D9577F;
+  --ink:#4A2A38;
+  --muted:#7B5565;
+  --line:#F3D2DB
+}
+[data-theme="blue"]{
+  --bg:#F4F5FF;
+  --side:#E3E7FF;
+  --surface:#FFFFFF;
+  --accent:#B3C0FF;
+  --accent-soft:#DBE1FF;
+  --accent2:#DCC4FF;
+  --accent2-soft:#EEE3FF;
+  --strong:#5468E0;
+  --ink:#2B2A52;
+  --muted:#585584;
+  --line:#D6DAF4
+}
+[data-theme="teal"]{
+  --bg:#F1FAF7;
+  --side:#D9F3EB;
+  --surface:#FFFFFF;
+  --accent:#92E3CF;
+  --accent-soft:#CBF1E6;
+  --accent2:#FFBBD0;
+  --accent2-soft:#FFE0EA;
+  --strong:#1B8C74;
+  --ink:#1D4741;
+  --muted:#46726B;
+  --line:#C4E8DE
+}
