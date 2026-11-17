@@ -4,7 +4,7 @@ import { addDays, addMonths, mondayOf, monthOf, todayISO } from '../lib/dates.js
 import { pruneImgs } from '../lib/text.js';
 import { PAL } from '../mock-data.js';
 
-const SHARED = ['toggleSelMode', 'toggleSel', 'clearSel', 'selectAll', 'setTag', 'openTags', 'setModal', 'closeModal',
+const SHARED = ['toggleSelMode', 'toggleSel', 'clearSel', 'selectAll', 'setTag', 'openTags', 'setModal', 'toast', 'closeModal',
   'dragStart', 'dragEnd', 'over', 'leave', 'addTagToModal', 'saveTag', 'askDeleteTag'];
 
 export function createDiaryActions({ api, store, toast, ask, T }) {
