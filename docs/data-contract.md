@@ -87,7 +87,7 @@ In Phase 1 images are only carried as the `images` map on tasks and notes; separ
 |---|---|---|
 | `theme` | string | `"pink"` (default), `"blue"` or `"teal"` |
 
-Mock stores the theme in `localStorage` key `bc-theme`.
+The theme lives in the `settings` table (Python) or in memory (MockApi). Nothing uses `localStorage`.
 
 ## Methods
 
@@ -133,3 +133,11 @@ Rules
 ### Settings
 - `get_settings()` → settings
 - `set_settings(patch)` → settings (full, after the change). Example: `set_settings({ theme: "blue" })`.
+
+## Python backend (Phase 6)
+
+- Python methods answer `{ok: true, data}` or `{ok: false, error}`; `PyApi` (in `api.js`) turns that into a value or a rejected `Error`.
+- Images: JS sends new pictures in the `images` map as data URLs. Python checks the real file type and size, saves the file,
+  picks the image id and rewrites the token in the text. The returned item has the final text and `images` (`id -> http://127.0.0.1:PORT/images/FILE`).
+- The page is served from the same local server (`http://127.0.0.1:PORT/index.html?host=py`), because Chromium blocks ES modules on `file://`.
+- Data folder: `data\` (images, logs, webview, `brain-castle.db`). Fallback `%APPDATA%\BrainCastle`.

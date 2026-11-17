@@ -1,15 +1,16 @@
 // Task actions: talk to `api`, then update the store with what the api returned.
 import { addDays, addMonths, mondayOf, monthOf, todayISO } from '../lib/dates.js';
+import { reloadQuietly } from '../lib/reload.js';
 import { pruneImgs } from '../lib/text.js';
 import { PAL } from '../mock-data.js';
 
-export function createTaskActions({ api, store, toast, ask }) {
+export function createTaskActions({ api, store, toast, ask, reload }) {
   const { getState, setState } = store;
   const idle = { dragId: null, overKey: null };
 
   // An api error becomes a short toast (see data-contract.md).
   const safe = (fn) => async (...args) => {
-    try { return await fn(...args); } catch (e) { toast(e && e.message ? e.message : 'Something went wrong'); return undefined; }
+    try { return await fn(...args); } catch (e) { toast(e && e.message ? e.message : 'Something went wrong'); await reloadQuietly(reload); return undefined; }
   };
   const swap = (items) => {
     const m = new Map(items.map((x) => [x.id, x]));

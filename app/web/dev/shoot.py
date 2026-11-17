@@ -38,9 +38,9 @@ def main():
             errors = []
             page.on("pageerror", lambda e: errors.append(str(e)))
             page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
-            page.add_init_script(f"localStorage.setItem('bc-theme', '{theme}')")
             page.goto(url)
             page.wait_for_function("window.__bc && window.__bc.store.getState().loaded")
+            page.evaluate("t => window.__bc.actions.pickTheme(t)", theme)  # the theme lives in settings now
             page.evaluate("document.fonts.ready")
             page.add_script_tag(path=str(WEB / "dev" / "overflow-check.js"))
             for area, label in AREAS:

@@ -13,6 +13,6 @@ Portable Windows desktop app in Python.
 
 ## Commands
 - Setup: `py -3.12 -m venv app\.venv` then `app\.venv\Scripts\python -m pip install -r app\requirements.txt -r app\requirements-dev.txt`
-- Run the app: (fill in as it appears)
+- Run the app (from the `app` folder): `.venv\Scripts\python -m brain_castle` (`--debug` for dev tools, `--data-dir PATH`, `--seed` = throw-away sample data in `<data>-seed`). Data is `data\` next to the project (next to the exe when built); delete it for a clean first run.
 - Tests: `app\.venv\Scripts\python -m pytest app\tests`
 - Build: (fill in as it appears) PyInstaller `--onedir --windowed`
