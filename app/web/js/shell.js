@@ -16,7 +16,7 @@ const AREA_NAME = { tasks: 'Tasks', diary: 'Diary', archive: 'Archive' };
 const CRUMB_ON = 'font-weight:800;color:var(--ink)';
 const CRUMB_OFF = 'font-weight:600';
 
-// Same rules as the design's crumbs. Sub-views are fixed for Phase 1 (the pages add their own later).
+// Same rules as the design's crumbs. Every level is clickable.
 export function buildCrumbs(s, actions) {
   const q = s.q.trim();
   if (q) {
@@ -26,11 +26,11 @@ export function buildCrumbs(s, actions) {
     ];
   }
   const list = [{ label: AREA_NAME[s.area], go: () => actions.go(s.area), current: s.area === 'archive' }];
-  if (s.area === 'tasks') list.push({ label: s.tview === 'list' ? 'Week list' : 'Calendar board', go: () => {}, current: true });
+  if (s.area === 'tasks') list.push({ label: s.tview === 'list' ? 'Week list' : 'Calendar board', go: actions.resetSel, current: true });
   if (s.area === 'diary') {
     const openB = s.dview === 'board' && s.openBook ? s.books.find((b) => b.id === s.openBook && !b.archived) : null;
     list.push({ label: s.dview === 'list' ? 'List' : 'Board', go: actions.closeBook, current: !openB });
-    if (openB) list.push({ label: openB.name, go: () => {}, current: true });
+    if (openB) list.push({ label: openB.name, go: actions.resetSel, current: true });
   }
   return list.map((c, i) => ({ ...c, sep: i > 0, style: c.current ? CRUMB_ON : CRUMB_OFF }));
 }
@@ -90,21 +90,6 @@ export function Sidebar({ state, counts, actions }) {
       <${NavItem} icon="archive" label="Archive" count=${counts.archive} chipBg="var(--surface)" on=${inArea('archive')} onClick=${() => actions.go('archive')} />
     </div>
   </aside>`;
-}
-
-// Placeholder area page. Real pages replace this in later phases.
-export function PlaceholderPage({ title, sub }) {
-  return html`<div>
-    <h1 style="font-size:34px">${title}</h1>
-    <div style="color:var(--muted);font-weight:600">${sub}</div>
-  </div>`;
-}
-
-export function SearchPlaceholder({ q }) {
-  return html`<div>
-    <h1 style="font-size:34px">Search results</h1>
-    <div style="color:var(--muted);font-weight:600">Showing results for "${q.trim()}" will come in a later phase.</div>
-  </div>`;
 }
 
 export { Card };
