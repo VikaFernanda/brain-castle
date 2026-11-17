@@ -1,11 +1,7 @@
 // Sample data copied from the design (Main.dc.html). Dates are relative to the current week,
 // exactly like the design's wd(i) helper. Used by MockApi only. The real app starts empty.
-const pad = (n) => String(n).padStart(2, '0');
-export const iso = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-export const parseD = (s) => { const p = s.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); };
-export const addDays = (s, n) => { const d = parseD(s); d.setDate(d.getDate() + n); return iso(d); };
-export const mondayOf = (s) => addDays(s, -((parseD(s).getDay() + 6) % 7));
-export const todayISO = () => iso(new Date());
+import { iso, parseD, addDays, mondayOf, todayISO } from './lib/dates.js';
+export { iso, parseD, addDays, mondayOf, todayISO };
 const wd = (i) => addDays(mondayOf(todayISO()), i);
 
 export const PAL = ['#FFC9D9', '#FFE9A0', '#C3D4FF', '#E0CCFF', '#BFEBDD', '#FFD3B8'];
