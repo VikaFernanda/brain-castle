@@ -15,7 +15,7 @@ Portable Windows desktop app in Python.
 - Setup: `py -3.12 -m venv app\.venv` then `app\.venv\Scripts\python -m pip install -r app\requirements.txt -r app\requirements-dev.txt`
 - Run the app (from the `app` folder): `.venv\Scripts\python -m brain_castle` (`--debug` for dev tools, `--data-dir PATH`, `--seed` = throw-away sample data in `<data>-seed`). Data is `data\` next to the project (next to the exe when built); delete it for a clean first run.
 - Tests: `app\.venv\Scripts\python -m pytest app\tests`
-- Build (not run in Phase 7): PyInstaller `--onedir --windowed --name BrainCastle --icon app\assets\brain-castle.ico --add-data "app\web;web" --add-data "app\assets;assets"`, entry `app\brain_castle\__main__.py`.
+- Build (Phase 8): `powershell -ExecutionPolicy Bypass -File build.ps1` (venv, tests, PyInstaller spec `apppackagingBrainCastle.spec`, zip in `dist`). Entry is `apppackagingauncher.py`. See README.md.
 - Front-end checks (browser, MockApi): `python app\web\dev\test_desktop.py` (also test_tasks, test_diary, test_archive, test_rich, test_markdown). Needs playwright installed outside the app.
 - Icon: `python app\tools\make_icon.py` redraws `app\assets\brain-castle.ico` from the castle logo.
 
