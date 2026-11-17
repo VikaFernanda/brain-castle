@@ -35,7 +35,7 @@
       if (parent && parent !== document.body && visible(parent) && leaves(el, parent)) {
         problems.push({ kind: 'leaves-parent', el: name(el), parent: name(parent) });
       }
-      if (el.tagName === 'BUTTON' && (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1)) {
+      if (el.tagName === 'BUTTON' && getComputedStyle(el).textOverflow !== 'ellipsis' && (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1)) {
         problems.push({ kind: 'content-overflows-button', el: name(el) });
       }
     }
