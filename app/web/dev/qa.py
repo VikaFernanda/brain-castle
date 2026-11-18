@@ -61,6 +61,24 @@ COMPUTED = [  # (what, js returning value, expected)
 ]
 
 
+def measured_inline(br, url):
+    """Design inline styles built by components: bulk selects 170/190px, rich modal max-width 720px."""
+    def fresh(page):
+        page.goto(url); page.wait_for_function("window.__bc && window.__bc.store.getState().loaded")
+    page = br.new_page(viewport={"width": 1440, "height": 900})
+    sel = "(l) => { const e = document.querySelector('select[aria-label=\"' + l + '\"]'); if (!e) return 'none'; const c = getComputedStyle(e); return [c.width, c.borderTopLeftRadius]; }"
+    fresh(page); page.click(".side >> text=Tasks"); btn(page, "Select").click(); page.get_by_role("button", name="Select task").nth(0).click()
+    checks = [("bulk tasks select 170px/999px", page.evaluate(sel, "Move selected tasks to a day"), ["170px", "999px"])]
+    fresh(page); page.click(".side >> text=Diary"); btn(page, "Select").click(); page.get_by_role("button", name="Select note").nth(0).click()
+    checks.append(("bulk notes select 190px/999px", page.evaluate(sel, "Move selected notes to a book"), ["190px", "999px"]))
+    fresh(page); page.click(".side >> text=Tasks"); btn(page, "New task").click()
+    checks.append(("modal max-width 720px", page.evaluate("getComputedStyle(document.querySelector('[role=dialog]')).maxWidth"), "720px"))
+    for what, v, exp in checks:
+        print(f"{'PASS' if v == exp else 'FAIL'} measured: {what} -> {v}")
+        if v != exp: bad.append((what, v))
+    page.close()
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     srv = serve()
@@ -105,6 +123,7 @@ def main():
                         print(f"{'PASS' if ok else 'FAIL'} computed: {what} -> {v}")
                         if not ok: bad.append((what, v))
                 page.close()
+        measured_inline(br, url)
         br.close()
     srv.shutdown()
     print("problems:", len(bad))

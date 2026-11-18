@@ -42,11 +42,11 @@ through a component (`IconButton size=32`, `Segmented tone="soft2"`, bulk bar se
 | Board card buttons `32x32`, icon `16x16` | 32, 32, 16, 16 | yes |
 | "Add task on this day" `32x32`, surface background | 32, 32, `rgb(255,255,255)` | yes |
 | Breadcrumb separator icon `14x14` | 14, 14 | yes |
-| Bulk "Move selected ..." select `170px` / `190px`, radius 999px | built in `BulkBar` (checked in the overflow check with bulk bars open) | not measured one by one: **I can't confirm** the exact width |
-| Modal `max-width:720px` (rich modal) | not measured: **I can't confirm** | open |
+| Bulk "Move selected ..." select `170px` (tasks) / `190px` (notes), radius 999px | **Difference found and fixed**: the app used 180px for both. Now 170px / 190px, 999px (measured by `qa.py`) | yes, after fix |
+| Modal `max-width:720px` (rich modal) | computed max-width 720px, box width 720px (measured by `qa.py`) | yes |
 | Editor hint `12px/600/line-height 1.4` | written in `RichEditor.js` with the same values (code read) | yes (code only) |
 
-Two rows are not measured. They are listed here as open, so the "no open differences" goal is **not fully proven** for them.
+All rows are now measured. No open differences from the design source. The only limit: `reference\` is empty and the design cannot render (`support.js` missing), so the comparison is against the design source values, not pixels.
 
 ## 4. Load test
 

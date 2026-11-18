@@ -1,6 +1,7 @@
 # Changelog
 
 ## 1.0.0 - 2026-11-17 (Phase 9: QA and release)
+- Bulk bar "Move selected" select widths now match the design: 170px for tasks, 190px for notes (was 180px for both). `qa.py` checks them, and the rich modal max-width 720px.
 - Damaged database file: the app now shows a clear message with the file name and what to do, and leaves the file as it was.
   Before, it only wrote the crash log. The file is checked (`PRAGMA quick_check`) before anything is written.
 - New tests for data safety: process killed during a save (from inside and from outside), garbage, wrecked and truncated files.
