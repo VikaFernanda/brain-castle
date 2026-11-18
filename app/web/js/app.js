@@ -97,7 +97,7 @@ function App() {
       </main>
     </div>
     ${isTasks && selCount > 0 ? html`<${BulkBar} count=${selCount} moveOptions=${dayOpts} moveLabel="Move selected tasks to a day" onMove=${(e) => { T.bulkMove(e.target.value); e.target.value = ''; }} onArchive=${T.bulkArchive} onDelete=${T.askBulkDelete} onClear=${T.clearSel} onSelectAll=${() => T.selectAll(view.visibleIds)} selectAllLabel=${view.visibleIds.length > 0 && view.visibleIds.every((i) => s.sel[i]) ? 'Clear selection' : 'Select all'} />` : null}
-    ${isDiary && selCount > 0 ? html`<${BulkBar} count=${selCount} moveOptions=${hasSelNote ? bookOpts : null} moveLabel="Move selected notes to a book" onMove=${(e) => { D.bulkMove(e.target.value); e.target.value = ''; }} onArchive=${D.bulkArchive} onDelete=${D.askBulkDelete} onClear=${D.clearSel} onSelectAll=${() => D.selectAll(dview.visibleIds)} selectAllLabel=${dview.visibleIds.length > 0 && dview.visibleIds.every((i) => s.sel[i]) ? 'Clear selection' : 'Select all'} />` : null}
+    ${isDiary && selCount > 0 ? html`<${BulkBar} count=${selCount} moveOptions=${hasSelNote ? bookOpts : null} moveLabel="Move selected notes to a book" moveWidth=${190} onMove=${(e) => { D.bulkMove(e.target.value); e.target.value = ''; }} onArchive=${D.bulkArchive} onDelete=${D.askBulkDelete} onClear=${D.clearSel} onSelectAll=${() => D.selectAll(dview.visibleIds)} selectAllLabel=${dview.visibleIds.length > 0 && dview.visibleIds.every((i) => s.sel[i]) ? 'Clear selection' : 'Select all'} />` : null}
     ${s.modal && s.modal.kind === 'note' ? html`<${NoteModal} s=${s} A=${D} />` : null}
     ${s.modal && s.modal.kind === 'book' ? html`<${BookModal} s=${s} A=${D} />` : null}
     ${s.modal && s.modal.kind === 'task' ? html`<${TaskModal} s=${s} A=${T} />` : null}

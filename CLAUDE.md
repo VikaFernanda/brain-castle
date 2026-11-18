@@ -23,3 +23,7 @@ Portable Windows desktop app in Python.
 - Release build blocks F5, right click, devtools and zoom; `--debug` turns that back on (`?host=py&debug=1`).
 - One instance per data folder (lock file `data\.lock`). Backups: File menu, zip of DB + images; import makes a safety copy in `data\backups`.
 - Crashes go to `data\logs\crash.log`.
+
+## QA (Phase 9)
+- `python app\web\dev\qa.py shots` (all screens, 3 themes, 2 sizes, overflow), `python app\tools\qa_source_compare.py`, load tests `app\tools\load_test.py` and `app\web\dev\load_test.py`. Reports in `docs\qa-report.md`, `docs\requirements-check.md`.
+- A damaged `brain-castle.db` raises `db.DatabaseDamaged`; main shows a message and never touches the file.
